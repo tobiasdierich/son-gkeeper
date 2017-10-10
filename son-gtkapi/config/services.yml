@@ -36,6 +36,9 @@ development: &common_settings
     functions:
       model: FunctionManagerService
       env_var_url: FUNCTION_MANAGEMENT_URL
+    cloud_services:
+      model: CloudServiceManagerService
+      env_var_url: CLOUD_SERVICE_MANAGEMENT_URL
     records:
       model: RecordManagerService
       env_var_url: RECORD_MANAGEMENT_URL
