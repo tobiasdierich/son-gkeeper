@@ -11,9 +11,10 @@ EXPOSE 5300
 WORKDIR /app
 ENV POSTGRES_PASSWORD sonata
 ENV POSTGRES_USER sonatatest
-ENV DATABASE_HOST postgres
+ENV DATABASE_HOST son-postgres
+ENV POSTGRES_DB=gatekeeper
 ENV DATABASE_PORT 5432
-ENV MQSERVER amqp://guest:guest@broker:5672
-ENV CATALOGUES_URL http://sp.int.sonata-nfv.eu:4002/catalogues
+ENV MQSERVER amqp://guest:guest@son-broker:5672
+ENV CATALOGUES_URL http://son-catalogue-repos:4011/catalogues/api/v2
 ENV PORT 5300
 CMD ["foreman", "start"]

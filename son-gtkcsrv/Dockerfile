@@ -9,6 +9,6 @@ RUN bundle install
 COPY . /app
 EXPOSE 5250
 WORKDIR /app
-ENV CATALOGUES_URL http://catalogues:4002/catalogues/api/v2
+ENV CATALOGUES_URL http://son-catalogue-repos:4011/catalogues/api/v2
 ENV PORT 5250
 CMD ["foreman", "start"]
