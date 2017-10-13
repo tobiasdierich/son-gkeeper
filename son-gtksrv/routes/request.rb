@@ -97,17 +97,35 @@ class GtkSrv < Sinatra::Base
       nsd = service['nsd']
       nsd[:uuid] = service['uuid']
       start_request['NSD']=nsd
-    
-      nsd['network_functions'].each_with_index do |function, index|
-        logger.debug(log_msg) { "function=['#{function['vnf_name']}', '#{function['vnf_vendor']}', '#{function['vnf_version']}']"}
-        stored_function = VFunction.new(settings.functions_catalogue, logger).find_function(function['vnf_name'],function['vnf_vendor'],function['vnf_version'])
-        logger.error(log_msg) {"network function not found"} unless stored_function
-        logger.debug(log_msg) {"function#{index}=#{stored_function}"}
-        vnfd = stored_function[:vnfd]
-        vnfd[:uuid] = stored_function[:uuid]
-        start_request["VNFD#{index}"]=vnfd 
-        logger.debug(log_msg) {"start_request[\"VNFD#{index}\"]=#{vnfd}"}
+
+      if nsd.key?('network_functions')
+        # map network functions to vnf descriptors
+        nsd['network_functions'].each_with_index do |function, index|
+          logger.debug(log_msg) { "function=['#{function['vnf_name']}', '#{function['vnf_vendor']}', '#{function['vnf_version']}']"}
+          stored_function = VFunction.new(settings.functions_catalogue, logger).find_function(function['vnf_name'],function['vnf_vendor'],function['vnf_version'])
+          logger.error(log_msg) {"network function not found"} unless stored_function
+          logger.debug(log_msg) {"function#{index}=#{stored_function}"}
+          vnfd = stored_function[:vnfd]
+          vnfd[:uuid] = stored_function[:uuid]
+          start_request["VNFD#{index}"]=vnfd
+          logger.debug(log_msg) {"start_request[\"VNFD#{index}\"]=#{vnfd}"}
+        end
       end
+
+      if nsd.key?('cloud_services')
+        # map cloud services to cs descriptors
+        nsd['cloud_services'].each_with_index do |cservice, index|
+          logger.debug(log_msg) { "cloud_service=['#{cservice['service_name']}', '#{cservice['service_vendor']}', '#{cservice['service_version']}']"}
+          stored_service = CService.new(settings.cloud_service_catalogue, logger).find_service(cservice['service_name'],cservice['service_vendor'],cservice['service_version'])
+          logger.error(log_msg) {"cloud service not found"} unless stored_service
+          logger.debug(log_msg) {"cloud_service#{index}=#{stored_service}"}
+          csd = stored_service[:csd]
+          csd[:uuid] = stored_service[:uuid]
+          start_request["CSD#{index}"]=csd
+          logger.debug(log_msg) {"start_request[\"CSD#{index}\"]=#{csd}"}
+        end
+      end
+
       start_request['egresses'] = egresses
       start_request['ingresses'] = ingresses
       
