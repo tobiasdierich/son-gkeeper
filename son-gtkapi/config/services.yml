@@ -33,6 +33,9 @@ development: &common_settings
     services:
       model: ServiceManagerService
       env_var_url: SERVICE_MANAGEMENT_URL
+    complex_services:
+      model: ComplexServiceManagerService
+      env_var_url: SERVICE_MANAGEMENT_URL
     functions:
       model: FunctionManagerService
       env_var_url: FUNCTION_MANAGEMENT_URL
