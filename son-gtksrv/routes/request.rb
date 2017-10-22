@@ -94,13 +94,13 @@ class GtkSrv < Sinatra::Base
       json_error 400, 'Not possible to create '+params['request_type']+' request', log_msg unless si_request
       logger.debug(log_msg) {"with service_uuid=#{params['service_uuid']}, service_instance_uuid=#{params['service_instance_uuid']}: #{si_request.inspect}"}
       
-      nsd = service['nsd']
-      nsd[:uuid] = service['uuid']
-      start_request['NSD']=nsd
+      descriptor = service.key?('nsd') ? service['nsd'] : service['cosd']
+      descriptor[:uuid] = service['uuid']
+      start_request[service.key?('nsd') ? 'NSD' : 'COSD']=descriptor
 
-      if nsd.key?('network_functions')
+      if descriptor.key?('network_functions')
         # map network functions to vnf descriptors
-        nsd['network_functions'].each_with_index do |function, index|
+        descriptor['network_functions'].each_with_index do |function, index|
           logger.debug(log_msg) { "function=['#{function['vnf_name']}', '#{function['vnf_vendor']}', '#{function['vnf_version']}']"}
           stored_function = VFunction.new(settings.functions_catalogue, logger).find_function(function['vnf_name'],function['vnf_vendor'],function['vnf_version'])
           logger.error(log_msg) {"network function not found"} unless stored_function
@@ -112,9 +112,9 @@ class GtkSrv < Sinatra::Base
         end
       end
 
-      if nsd.key?('cloud_services')
+      if descriptor.key?('cloud_services')
         # map cloud services to cs descriptors
-        nsd['cloud_services'].each_with_index do |cservice, index|
+        descriptor['cloud_services'].each_with_index do |cservice, index|
           logger.debug(log_msg) { "cloud_service=['#{cservice['service_name']}', '#{cservice['service_vendor']}', '#{cservice['service_version']}']"}
           stored_service = CService.new(settings.cloud_service_catalogue, logger).find_service(cservice['service_name'],cservice['service_vendor'],cservice['service_version'])
           logger.error(log_msg) {"cloud service not found"} unless stored_service
@@ -186,7 +186,15 @@ class GtkSrv < Sinatra::Base
       params['service_uuid'] = services.to_a[0]['service_uuid']
     end
     logger.debug(log_message) {"params #{params}"}
-    NService.new(settings.services_catalogue, logger).find_by_uuid(params['service_uuid'])
+
+    begin
+      NService.new(settings.services_catalogue, logger).find_by_uuid(params['service_uuid'])
+
+    rescue NServiceNotFoundError
+      logger.debug(log_message) { "Can't find NS with uuid = #{params['service_uuid']}. Checking for complex service."}
+    end
+
+    CoService.new(settings.complex_services_catalogue, logger).find_by_uuid(params['service_uuid'])
   end
     
   class Hash
