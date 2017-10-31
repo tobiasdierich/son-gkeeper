@@ -54,31 +54,41 @@ class VimManagerService < ManagerService
     # "city":String,"country":String, "vim_address":String,"username":String,"pass":String}
 
     cparams = {}
-    cparams[:vim_type] = "Heat"
+    cparams[:vim_type] = params[:vim_type].capitalize
     cparams[:configuration] = {}
-    cparams[:configuration][:tenant_ext_router] = params[:compute_configuration][:tenant_ext_router]
-    cparams[:configuration][:tenant_ext_net] = params[:compute_configuration][:tenant_ext_net]
-    cparams[:configuration][:tenant] = params[:compute_configuration][:tenant_id]
     cparams[:country] = params[:country]
     cparams[:city] = params[:city]
     cparams[:name] = params[:name]
-    cparams[:vim_address] = params[:compute_configuration][:vim_address]
-    cparams[:username] = params[:compute_configuration][:username]
-    cparams[:pass] = params[:compute_configuration][:pass]
+
+    if cparams[:vim_type] == 'Kubernetes'
+      cparams[:vim_address] = params[:compute_configuration][:vim_address]
+      cparams[:username] = params[:compute_configuration][:username]
+      cparams[:pass] = params[:compute_configuration][:pass]
+    else
+      cparams[:configuration][:tenant_ext_router] = params[:compute_configuration][:tenant_ext_router]
+      cparams[:configuration][:tenant_ext_net] = params[:compute_configuration][:tenant_ext_net]
+      cparams[:configuration][:tenant] = params[:compute_configuration][:tenant_id]
+      cparams[:vim_address] = params[:compute_configuration][:vim_address]
+      cparams[:username] = params[:compute_configuration][:username]
+      cparams[:pass] = params[:compute_configuration][:pass]
+    end
 
     # Object networking-resources created from params
     #{"vim_type":"ovs", "vim_address":"10.100.32.200","username":"operator","city":"Athens","country":"Greece","pass":"apass",
     # "configuration":{"compute_uuid":"ecff9410-4a04-4bd7-82f3-89db93debd4a"}}
 
     nparams = {}
-    nparams[:vim_type] = "ovs"
-    nparams[:configuration] = {}
-    nparams[:vim_address] = params[:networking_configuration][:vim_address]
-    nparams[:username] = params[:networking_configuration][:username]
-    nparams[:city] = params[:city]
-    nparams[:name] = params[:name]
-    nparams[:country] = params[:country]
-    nparams[:pass] = params[:networking_configuration][:pass]
+
+    unless cparams[:vim_type] == 'Kubernetes'
+      nparams[:vim_type] = "ovs"
+      nparams[:configuration] = {}
+      nparams[:vim_address] = params[:networking_configuration][:vim_address]
+      nparams[:username] = params[:networking_configuration][:username]
+      nparams[:city] = params[:city]
+      nparams[:name] = params[:name]
+      nparams[:country] = params[:country]
+      nparams[:pass] = params[:networking_configuration][:pass]
+    end
 
 
     begin
@@ -86,35 +96,40 @@ class VimManagerService < ManagerService
       # Creating compute resource
       response = postCurb(url:@@url+'/vim/compute-resources', body: cparams)
       GtkApi.logger.debug(method) {"response="+response.to_s}
-      #Wait a bit for the process call
-      sleep 3
-      request_uuid = response[:items][:request_uuid]
-      GtkApi.logger.debug(method) {"request_uuid="+request_uuid.to_s}
-      GtkApi.logger.debug(method) {"@url = " + @@url}
-      sleep 2
 
-      # Finding compute resource uuid
-      response2 = getCurb(url:@@url+'/vim_requests/compute-resources/'+request_uuid, headers: JSON_HEADERS)
-      GtkApi.logger.debug(method) {"response2="+response2.to_s}
-      compute_uuid = response2[:items][:query_response][:uuid]
-      GtkApi.logger.debug(method) {"compute_uuid="+compute_uuid.to_s}
-      nparams[:configuration][:compute_uuid] = compute_uuid
-      GtkApi.logger.debug(method) {"@url = " + @@url}
+      unless cparams[:vim_type] == 'Kubernetes'
+        #Wait a bit for the process call
+        sleep 3
+        request_uuid = response[:items][:request_uuid]
+        GtkApi.logger.debug(method) {"request_uuid="+request_uuid.to_s}
+        GtkApi.logger.debug(method) {"@url = " + @@url}
+        sleep 2
 
-      # Creating networking resource
-      response3 = postCurb(url:@@url+'/vim/networking-resources', body: nparams)
-      GtkApi.logger.debug(method) {"response3="+response3.to_s}
+        # Finding compute resource uuid
+        response2 = getCurb(url:@@url+'/vim_requests/compute-resources/'+request_uuid, headers: JSON_HEADERS)
+        GtkApi.logger.debug(method) {"response2="+response2.to_s}
+        compute_uuid = response2[:items][:query_response][:uuid]
+        GtkApi.logger.debug(method) {"compute_uuid="+compute_uuid.to_s}
+        nparams[:configuration][:compute_uuid] = compute_uuid
+        GtkApi.logger.debug(method) {"@url = " + @@url}
 
-      # Object WIM ATTACH {"wim_uuid":String, "vim_uuid":String, "vim_address":String}
-      wparams={}
-      wparams[:wim_uuid] = params[:wim_id]
-      wparams[:vim_uuid] = compute_uuid
-      wparams[:vim_address] = params[:networking_configuration][:vim_address]
-      GtkApi.logger.debug(method) {"@url = " + @@url}
+        # Creating networking resource
+        response3 = postCurb(url:@@url+'/vim/networking-resources', body: nparams)
+        GtkApi.logger.debug(method) {"response3="+response3.to_s}
 
-      # Creating link VIM -> WIM
-      response4 = postCurb(url:@@url+'/wim/attach', body: wparams)
-      GtkApi.logger.debug(method) {"response4="+response4.to_s}
+        # Object WIM ATTACH {"wim_uuid":String, "vim_uuid":String, "vim_address":String}
+        wparams={}
+        wparams[:wim_uuid] = params[:wim_id]
+        wparams[:vim_uuid] = compute_uuid
+        wparams[:vim_address] = params[:networking_configuration][:vim_address]
+        GtkApi.logger.debug(method) {"@url = " + @@url}
+
+        # Creating link VIM -> WIM
+        response4 = postCurb(url:@@url+'/wim/attach', body: wparams)
+        GtkApi.logger.debug(method) {"response4="+response4.to_s}
+      else
+        return response
+      end
 
     rescue => e
       GtkApi.logger.error(method) {"Error during processing: #{$!}"}

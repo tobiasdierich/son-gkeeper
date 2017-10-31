@@ -61,12 +61,14 @@ class GtkApi < Sinatra::Base
           #  "city":"city"
           #  "name" : "nombre"}
 
-          json_error(400, 'VIM compute is missing', log_message) unless valid_param?(params: params, sym: :compute_configuration)
-          json_error(400, 'VIM networking is missing', log_message) unless valid_param?(params: params, sym: :networking_configuration)
-          json_error(400, 'VIM wim_id is missing', log_message) unless valid_param?(params: params, sym: :wim_id)
-          json_error(400, 'VIM country is missing', log_message) unless valid_param?(params: params, sym: :country)
-          json_error(400, 'VIM city is missing', log_message) unless valid_param?(params: params, sym: :city)
-          json_error(400, 'VIM name is missing', log_message) unless valid_param?(params: params, sym: :name)
+          json_error(400, 'VIM compute is missing', MESSAGE) unless valid_param?(params: params, sym: :compute_configuration)
+          unless params[:vim_type].capitalize == 'Kubernetes'
+            json_error(400, 'VIM networking is missing', MESSAGE) unless valid_param?(params: params, sym: :networking_configuration)
+          end
+          json_error(400, 'VIM wim_id is missing', MESSAGE) unless valid_param?(params: params, sym: :wim_id)
+          json_error(400, 'VIM country is missing', MESSAGE) unless valid_param?(params: params, sym: :country)
+          json_error(400, 'VIM city is missing', MESSAGE) unless valid_param?(params: params, sym: :city)
+          json_error(400, 'VIM name is missing', MESSAGE) unless valid_param?(params: params, sym: :name)
 
           new_request = VimManagerService.create_vim_rs(params)
           if new_request
@@ -118,137 +120,6 @@ class GtkApi < Sinatra::Base
       end
     end
   end
-
-=begin
-  namespace '/api/v2/vims/compute-resources' do
-    before do
-       if request.request_method == 'OPTIONS'
-         response.headers['Access-Control-Allow-Origin'] = '*'
-         response.headers['Access-Control-Allow-Methods'] = 'POST'      
-         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
-         halt 200
-       end
-     end
-  
-    # POST a request
-    post '/?' do
-      MESSAGE = "GtkApi::POST /api/v2/vims/compute-resources"
-      params = JSON.parse(request.body.read)
-      unless params.nil?
-        logger.debug(MESSAGE) {"entered with params=#{params}"}
-        new_request = VimManagerService.create_vim_comp_rs(params)
-        if new_request
-          logger.debug(MESSAGE) {"new_request =#{new_request}"}
-          halt 201, new_request.to_json
-        else
-          logger.debug(MESSAGE) { "leaving with 'No vim creation request was created'"}
-          json_error 400, 'No vim compute create_request was created'
-        end
-      end
-      logger.debug(MESSAGE) { "leaving with 'No request id specified'"}
-      json_error 400, 'No params specified for the create request'
-    end
-
-    # GET many vims
-    get '/?' do
-      MESSAGE="GtkApi GET /api/v2/vims/compute-resources?"+query_string
-      @offset ||= params['offset'] ||= DEFAULT_OFFSET 
-      @limit ||= params['limit'] ||= DEFAULT_LIMIT
-
-      logger.info(MESSAGE) {"entered"}
-      vims = VimManagerService.find_vims_comp_rs(params)
-      logger.debug(MESSAGE) { "vims= #{vims}"}
-      if vims 
-        links = build_pagination_headers(url: request_url, limit: @limit.to_i, offset: @offset.to_i, total: vims.size)
-        [200, {'Link' => links}, vims.to_json]
-      else
-        logger.info(MESSAGE) { "leaving GET with 'No get vims compute request were created'"}
-        json_error 400, 'No get list of vims compute request was created'
-      end
-    end
-  
-    # GET one specific request
-    get '/:uuid/?' do
-      unless params[:uuid].nil?
-        logger.debug "GtkApi: GET /api/v2/vims/compute-resources/#{params[:uuid]}"
-        json_error 400, 'Invalid request UUID' unless valid? params[:uuid]
-      
-        request = VimManagerService.find_vim_comp_rs_request_by_uuid(params['uuid'])
-        json_error 404, "The vim_request UUID #{params[:uuid]} does not exist" unless request
-
-        logger.debug "GtkApi: leaving GET /vim_request/compute-resources/#{params[:uuid]}\" with request #{request}"
-        halt 200, request.to_json
-      end
-      logger.debug "GtkApi: leaving GET /vim_request/compute-resources/#{params[:uuid]} with 'No vim_request UUID specified'"
-      json_error 400, 'No vim_request UUID specified'
-    end
-  end
-  
-  namespace '/api/v2/vims/networking-resources' do
-    before do
-      if request.request_method == 'OPTIONS'
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
-        halt 200
-      end
-    end
-
-    # POST a request
-    post '/?' do
-      MESSAGE = "GtkApi::POST /api/v2/vims/networking-resources"
-      params = JSON.parse(request.body.read, symbolize_names: true)
-
-      unless params.nil?
-        logger.debug(MESSAGE) {"entered with params=#{params}"}
-        new_request = VimManagerService.create_vim_net_rs(params)
-        if new_request
-          logger.debug(MESSAGE) {"new_request =#{new_request}"}
-          halt 201, new_request.to_json
-        else
-          logger.debug(MESSAGE) { "leaving with 'No vim networking creation request was created'"}
-          json_error 400, 'No vim networking create_request was created'
-        end
-      end
-      logger.debug(MESSAGE) { "leaving with 'No request id specified'"}
-      json_error 400, 'No params specified for the create request'
-    end
-
-    # GET many vims
-    get '/?' do
-      MESSAGE="GtkApi GET /api/v2/vims/networking-resources?"+query_string
-      @offset ||= params['offset'] ||= DEFAULT_OFFSET
-      @limit ||= params['limit'] ||= DEFAULT_LIMIT
-
-      logger.info(MESSAGE) {"entered"}
-      vims = VimManagerService.find_vims_net_rs(params)
-      logger.debug(MESSAGE) { "vims= #{vims}"}
-      if vims
-        links = build_pagination_headers(url: request_url, limit: @limit.to_i, offset: @offset.to_i, total: vims.size)
-        [200, {'Link' => links}, vims.to_json]
-      else
-        logger.info(MESSAGE) { "leaving GET with 'No get vims networking request were created'"}
-        json_error 400, 'No get list of vims networking request was created'
-      end
-    end
-
-    # GET one specific request
-    get '/:uuid/?' do
-      unless params[:uuid].nil?
-        logger.debug "GtkApi: GET /api/v2/vims/networking-resources/#{params[:uuid]}"
-        json_error 400, 'Invalid request UUID' unless valid? params[:uuid]
-
-        request = VimManagerService.find_vim_net_rs_request_by_uuid(params['uuid'])
-        json_error 404, "The vim_request UUID #{params[:uuid]} does not exist" unless request
-
-        logger.debug "GtkApi: leaving GET /vim_request/networking-resources/#{params[:uuid]}\" with request #{request}"
-        halt 200, request.to_json
-      end
-      logger.debug "GtkApi: leaving GET /vim_request/#{params[:uuid]} with 'No vim_request UUID specified'"
-      json_error 400, 'No vim_request UUID specified'
-    end
-  end
-=end
 
   namespace '/api/v2/admin/vims' do
     get '/logs/?' do
