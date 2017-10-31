@@ -96,10 +96,10 @@ class VimManagerService < ManagerService
       # Creating compute resource
       response = postCurb(url:@@url+'/vim/compute-resources', body: cparams)
       GtkApi.logger.debug(method) {"response="+response.to_s}
+      sleep 3
 
       unless cparams[:vim_type] == 'Kubernetes'
         #Wait a bit for the process call
-        sleep 3
         request_uuid = response[:items][:request_uuid]
         GtkApi.logger.debug(method) {"request_uuid="+request_uuid.to_s}
         GtkApi.logger.debug(method) {"@url = " + @@url}
