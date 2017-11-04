@@ -62,7 +62,6 @@ class VimManagerService < ManagerService
 
     if cparams[:vim_type] == 'Kubernetes'
       cparams[:vim_address] = params[:compute_configuration][:vim_address]
-      cparams[:username] = params[:compute_configuration][:username]
       cparams[:pass] = params[:compute_configuration][:pass]
       cparams[:configuration][:cluster_ca_cert] = params[:compute_configuration][:cluster_ca_cert]
     else
