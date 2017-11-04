@@ -64,6 +64,7 @@ class VimManagerService < ManagerService
       cparams[:vim_address] = params[:compute_configuration][:vim_address]
       cparams[:username] = params[:compute_configuration][:username]
       cparams[:pass] = params[:compute_configuration][:pass]
+      cparams[:configuration][:cluster_ca_cert] = params[:configuration][:cluster_ca_cert]
     else
       cparams[:configuration][:tenant_ext_router] = params[:compute_configuration][:tenant_ext_router]
       cparams[:configuration][:tenant_ext_net] = params[:compute_configuration][:tenant_ext_net]
