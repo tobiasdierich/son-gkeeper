@@ -98,39 +98,37 @@ class VimManagerService < ManagerService
       GtkApi.logger.debug(method) {"response="+response.to_s}
       sleep 3
 
-      unless cparams[:vim_type] == 'Kubernetes'
-        #Wait a bit for the process call
-        request_uuid = response[:items][:request_uuid]
-        GtkApi.logger.debug(method) {"request_uuid="+request_uuid.to_s}
-        GtkApi.logger.debug(method) {"@url = " + @@url}
-        sleep 2
+      #Wait a bit for the process call
+      request_uuid = response[:items][:request_uuid]
+      GtkApi.logger.debug(method) {"request_uuid="+request_uuid.to_s}
+      GtkApi.logger.debug(method) {"@url = " + @@url}
+      sleep 2
 
-        # Finding compute resource uuid
-        response2 = getCurb(url:@@url+'/vim_requests/compute-resources/'+request_uuid, headers: JSON_HEADERS)
-        GtkApi.logger.debug(method) {"response2="+response2.to_s}
-        compute_uuid = response2[:items][:query_response][:uuid]
-        GtkApi.logger.debug(method) {"compute_uuid="+compute_uuid.to_s}
+      # Finding compute resource uuid
+      response2 = getCurb(url:@@url+'/vim_requests/compute-resources/'+request_uuid, headers: JSON_HEADERS)
+      GtkApi.logger.debug(method) {"response2="+response2.to_s}
+      compute_uuid = response2[:items][:query_response][:uuid]
+      GtkApi.logger.debug(method) {"compute_uuid="+compute_uuid.to_s}
+
+      unless cparams[:vim_type] == 'Kubernetes'
         nparams[:configuration][:compute_uuid] = compute_uuid
         GtkApi.logger.debug(method) {"@url = " + @@url}
 
         # Creating networking resource
         response3 = postCurb(url:@@url+'/vim/networking-resources', body: nparams)
         GtkApi.logger.debug(method) {"response3="+response3.to_s}
-
-        # Object WIM ATTACH {"wim_uuid":String, "vim_uuid":String, "vim_address":String}
-        wparams={}
-        wparams[:wim_uuid] = params[:wim_id]
-        wparams[:vim_uuid] = compute_uuid
-        wparams[:vim_address] = params[:networking_configuration][:vim_address]
-        GtkApi.logger.debug(method) {"@url = " + @@url}
-
-        # Creating link VIM -> WIM
-        response4 = postCurb(url:@@url+'/wim/attach', body: wparams)
-        GtkApi.logger.debug(method) {"response4="+response4.to_s}
-      else
-        return response
       end
 
+      # Object WIM ATTACH {"wim_uuid":String, "vim_uuid":String, "vim_address":String}
+      wparams={}
+      wparams[:wim_uuid] = params[:wim_id]
+      wparams[:vim_uuid] = compute_uuid
+      wparams[:vim_address] = params[:networking_configuration][:vim_address]
+      GtkApi.logger.debug(method) {"@url = " + @@url}
+
+      # Creating link VIM -> WIM
+      response4 = postCurb(url:@@url+'/wim/attach', body: wparams)
+      GtkApi.logger.debug(method) {"response4="+response4.to_s}
     rescue => e
       GtkApi.logger.error(method) {"Error during processing: #{$!}"}
       GtkApi.logger.error(method) {"Backtrace:\n\t#{e.backtrace.join("\n\t")}"}
