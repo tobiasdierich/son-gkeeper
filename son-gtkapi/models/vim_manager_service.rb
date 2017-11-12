@@ -60,7 +60,9 @@ class VimManagerService < ManagerService
     cparams[:city] = params[:city]
     cparams[:name] = params[:name]
 
-    if cparams[:vim_type] == 'Kubernetes'
+    is_kubernetes = cparams[:vim_type] == 'Kubernetes'
+
+    if is_kubernetes
       cparams[:vim_address] = params[:compute_configuration][:vim_address]
       cparams[:pass] = params[:compute_configuration][:pass]
       cparams[:configuration][:cluster_ca_cert] = params[:compute_configuration][:cluster_ca_cert]
@@ -79,7 +81,7 @@ class VimManagerService < ManagerService
 
     nparams = {}
 
-    unless cparams[:vim_type] == 'Kubernetes'
+    unless is_kubernetes
       nparams[:vim_type] = "ovs"
       nparams[:configuration] = {}
       nparams[:vim_address] = params[:networking_configuration][:vim_address]
@@ -110,7 +112,7 @@ class VimManagerService < ManagerService
       compute_uuid = response2[:items][:query_response][:uuid]
       GtkApi.logger.debug(method) {"compute_uuid="+compute_uuid.to_s}
 
-      unless cparams[:vim_type] == 'Kubernetes'
+      unless is_kubernetes
         nparams[:configuration][:compute_uuid] = compute_uuid
         GtkApi.logger.debug(method) {"@url = " + @@url}
 
@@ -123,7 +125,8 @@ class VimManagerService < ManagerService
       wparams={}
       wparams[:wim_uuid] = params[:wim_id]
       wparams[:vim_uuid] = compute_uuid
-      wparams[:vim_address] = params[:networking_configuration][:vim_address]
+      # TODO: Use real network configuration ip for kubernetes
+      wparams[:vim_address] = if is_kubernetes then '127.0.0.1' else params[:networking_configuration][:vim_address] end
       GtkApi.logger.debug(method) {"@url = " + @@url}
 
       # Creating link VIM -> WIM
