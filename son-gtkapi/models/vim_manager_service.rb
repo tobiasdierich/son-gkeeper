@@ -44,7 +44,7 @@ class VimManagerService < ManagerService
   #General Case Add VIM compute and network
 
   def self.create_vim_rs(params)
-    method = LOG_MESSAGE + "##{__method__}(#{params})"
+    method = LOG_MESSAGE + "##{__method__}"
     GtkApi.logger.debug(method) {"entered"}
 
     saved_params = params.dup

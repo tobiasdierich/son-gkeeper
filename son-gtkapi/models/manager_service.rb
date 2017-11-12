@@ -58,7 +58,7 @@ class ManagerService
       GtkApi.logger.debug(log_message) {"header_str=#{res.header_str}"}
       GtkApi.logger.debug(log_message) {"response body=#{res.body}"}
       count = record_count_from_response_headers(res.header_str)
-      status = status_from_response_headers(res.header_str)
+      status = res.response_code
       case status
       when 200..299
         begin
@@ -113,7 +113,7 @@ class ManagerService
       end
     end
     GtkApi.logger.debug(log_message) {"response body=#{res.body}"}
-    status = status_from_response_headers(res.header_str)
+    status = res.response_code
     case status
     when 200..202
       begin
@@ -147,7 +147,7 @@ class ManagerService
         end
       end
     end
-    status = status_from_response_headers(res.header_str)
+    status = res.response_code
     GtkApi.logger.debug(log_message) {"response body=#{res.body}"}
     case status
     when 200..202
@@ -192,13 +192,6 @@ class ManagerService
     #        "Content-Length" => "62164", "Connection" => "Keep-Alive"}
   end
 
-  def self.status_from_response_headers(header_str)
-    # From http://stackoverflow.com/questions/14345805/get-response-headers-from-curb
-    #http_response # => "HTTP/1.1 200 OK"
-    http_status = header_str.split(/[\r\n]+/).map(&:strip)[0].split(" ")
-    http_status[1].to_i
-  end
-
   def self.record_count_from_response_headers(header_str)
     # From http://stackoverflow.com/questions/14345805/get-response-headers-from-curb
     http_response, *http_headers = header_str.split(/[\r\n]+/).map(&:strip)
@@ -217,7 +210,7 @@ class ManagerService
       req.headers['Content-Type'] = 'text/plain; charset=utf8'
       req.headers['Location'] = '/'
     end    
-    status = status_from_response_headers(res.header_str)
+    status = res.response_code
     
     GtkApi.logger.debug(log_message) {"status=#{status}"}
     case status
