@@ -85,8 +85,9 @@ class MQServer
           
           # if this is a final answer, there'll be an NSR
           service_instance = parsed_payload['nsr']
+          service_instance ||= parsed_payload['cosr']
           if service_instance && service_instance.key?('id')
-            service_instance_uuid = parsed_payload['nsr']['id']
+            service_instance_uuid = service_instance['id']
             @logger.debug(logmsg) { "request['service_instance_uuid'] turned into "+service_instance_uuid}
             request['service_instance_uuid'] = service_instance_uuid
           end
@@ -203,7 +204,7 @@ class MQServer
     @logger.debug(log_message) { "entered with request=#{request}"}
     now = Time.now.utc
 
-    body = { uuid: request['uuid'], elapsed_time: now-Time.parse(request['began_at']), time_stamp: now}
+    body = { uuid: request['uuid'], elapsed_time: now-Time.parse(request['began_at']).to_s, time_stamp: now}
     begin
       _response = RestClient.put(request['callback'], body.to_json, content_type: :json, accept: :json) 
       @logger.debug(log_message) { "response=#{_response}"}
