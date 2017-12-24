@@ -182,7 +182,7 @@ class GtkSrv < Sinatra::Base
     if params['request_type'] == 'TERMINATE'
       # Get the service_uuid from the creation request
       services = Request.where("service_instance_uuid = ? AND request_type = 'CREATE'", params['service_instance_uuid'])
-      logger.debug(log_message) {"services found = #{services}"}
+      logger.debug(log_message) {"services found = #{services.to_a}"}
       params['service_uuid'] = services.to_a[0]['service_uuid']
     end
     logger.debug(log_message) {"params #{params}"}
