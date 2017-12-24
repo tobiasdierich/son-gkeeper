@@ -1,4 +1,4 @@
-FROM jboss/keycloak:latest
+FROM jboss/keycloak:3.2.1.Final
 
 USER root
 RUN yum install -y supervisor
