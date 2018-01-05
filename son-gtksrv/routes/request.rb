@@ -53,7 +53,7 @@ class GtkSrv < Sinatra::Base
     keyed_params = keyed_hash(params)
     
     # get rid of :offset and :limit
-    [:offset, :limit].each { |k| keyed_params.delete(k)}
+    [:offset, :limit, :captures].each { |k| keyed_params.delete(k)}
     valid_fields = [:service_uuid, :status, :created_at, :updated_at]
     logger.info(MODULE) {" keyed_params.keys - valid_fields = #{keyed_params.keys - valid_fields}"}
     json_error 400, "GtkSrv: wrong parameters #{params}" unless keyed_params.keys - valid_fields == []
@@ -79,6 +79,7 @@ class GtkSrv < Sinatra::Base
     # we're not storing egresses or ingresses
     egresses = params.delete 'egresses' if params['egresses']
     ingresses = params.delete 'ingresses' if params['ingresses']
+    user_data = params.delete 'user_data' if params['user_data']
     
     begin
       start_request={}
@@ -128,6 +129,7 @@ class GtkSrv < Sinatra::Base
 
       start_request['egresses'] = egresses
       start_request['ingresses'] = ingresses
+      start_request['user_data'] = user_data
       
       start_request_yml = YAML.dump(start_request.deep_stringify_keys)
       logger.debug(log_msg) {"#{params}:\n"+start_request_yml}

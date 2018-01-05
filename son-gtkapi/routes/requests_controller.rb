@@ -54,6 +54,9 @@ class GtkApi < Sinatra::Base
         require_param(param: 'service_uuid', params: params, kpi_method: kpi_method, error_message: 'Service UUID', log_message: log_message, began_at: began_at)
         require_param(param: 'egresses', params: params, kpi_method: kpi_method, error_message: 'Egresses list', log_message: log_message, began_at: began_at)
         require_param(param: 'ingresses', params: params, kpi_method: kpi_method, error_message: 'Ingresses list', log_message: log_message, began_at: began_at)
+      elsif params['request_type'] == 'UPDATE'
+        kpi_method = method(:count_service_instance_update_requests)
+        require_param(param: 'service_instance_uuid', params: params, kpi_method: kpi_method, error_message: 'Service instance UUID', log_message: log_message, began_at: began_at)
       else # 'TERMINATE'
         kpi_method = method(:count_service_termination_requests)
         require_param(param: 'service_instance_uuid', params: params, kpi_method: kpi_method, error_message: 'Service UUID', log_message: log_message, began_at: began_at)
@@ -67,6 +70,7 @@ class GtkApi < Sinatra::Base
       remaining = check_rate_limit(limit: 'other_operations', client: user_name) if check_rate_limit_usage()
       
       params['callback'] = kpis_url+'/service-instantiation-time'
+      params['user_data'] = build_user_data(user_name)
       new_request = ServiceManagerService.create_service_request(params)
       logger.debug(log_message) { "new_request =#{new_request}"}
       if new_request[:status] != 201
@@ -93,6 +97,7 @@ class GtkApi < Sinatra::Base
       logger.debug(MESSAGE) {"User authorized"}
       remaining = check_rate_limit(limit: 'other_operations', client: user_name) if check_rate_limit_usage()
       
+      params.delete('captures') if params.keys.include?('captures')
       requests = ServiceManagerService.find_requests(params)
       logger.debug(MESSAGE) {"requests = #{requests}"}
       validate_collection_existence(collection: requests, name: 'requests', kpi_method: method(:count_services_instantiation_requests_queries), began_at: began_at, log_message: MESSAGE)
@@ -170,8 +175,25 @@ class GtkApi < Sinatra::Base
   
   private
   
+  def build_user_data(user_name)
+    user_data = {}
+    user = User.find_by_name(user_name)
+    user_data['customer'] = { email: user.email, phone: user.phone_number}
+    user_data['customer']['keys'] = { public: user.instances_public_key, private: user.instances_private_key}
+
+    # We're not considering the developer for now
+    user_data['developer'] = { email: nil, phone: nil}
+    user_data
+  end
+  
   def kpis_url
     ENV[GtkApi.services['kpis']['env_var_url']]
+  end
+  
+  def count_service_instance_update_requests(labels:)
+    name = __method__.to_s.split('_')[1..-1].join('_')
+    desc = "how many service instance updates have been requested"
+    ServiceManagerService.counter_kpi({name: name, docstring: desc, base_labels: labels.merge({method: 'POST', module: 'services'})})
   end
   
   def count_service_instantiation_requests(labels:)
