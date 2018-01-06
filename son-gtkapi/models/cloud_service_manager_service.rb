@@ -36,17 +36,18 @@ class CloudServiceManagerService < ManagerService
 
   attr_accessor :uuid, :instances
 
-  def self.config(url:)
-    log_message = LOG_MESSAGE + "##{__method__}"
+  def self.config(url:, logger:)
+    method = LOG_MESSAGE + "##{__method__}"
     raise ArgumentError.new('CloudServiceManagerService can not be configured with nil url') if url.nil?
     raise ArgumentError.new('CloudServiceManagerService can not be configured with empty url') if url.empty?
     @@url = url
-    GtkApi.logger.debug(log_message) {'entered with url='+url}
+    @@logger = logger
+    @@logger.debug(method) {"entered with url=#{url}"}
   end
 
   def initialize(uuid:)
     log_message = LOG_MESSAGE + "##{__method__}"
-    GtkApi.logger.debug(log_message) {"entered with uuid #{uuid}"}
+    @@logger.debug(log_message) {"entered with uuid #{uuid}"}
     raise ArgumentError.new('CloudServiceManagerService can not be instantiated without a cloud service uuid') if (:uuid.nil? || :uuid.empty?)
     @uuid = uuid
     @instances = []
@@ -54,18 +55,18 @@ class CloudServiceManagerService < ManagerService
 
   def self.find_by_uuid(uuid)
     log_message = LOG_MESSAGE + "##{__method__}"
-    GtkApi.logger.debug(log_message) {"entered with uuid #{uuid}"}
+    @@logger.debug(log_message) {"entered with uuid #{uuid}"}
     response = getCurb(url: @@url + '/cloud-services/'+uuid)
-    GtkApi.logger.debug(log_message) {"response=#{response}"}
+    @@logger.debug(log_message) {"response=#{response}"}
     response
   end
 
   # This version (note the '!') works with exceptions
   def self.find_by_uuid!(uuid)
     log_message = LOG_MESSAGE + "##{__method__}"
-    GtkApi.logger.debug(log_message) {'entered with uuid='+uuid}
+    @@logger.debug(log_message) {'entered with uuid='+uuid}
     response = getCurb(url: @@url + '/cloud-services/' + uuid, headers: JSON_HEADERS)
-    GtkApi.logger.debug(log_message) {"response=#{response}"}
+    @@logger.debug(log_message) {"response=#{response}"}
     case response[:status]
       when 200
         service = response[:items]
@@ -78,17 +79,17 @@ class CloudServiceManagerService < ManagerService
   def self.find(params)
     #find(url: @@url + '/cloud-services', params: params, log_message: LOG_MESSAGE + "##{__method__}(#{params})")
     log_message = LOG_MESSAGE + "##{__method__}"
-    GtkApi.logger.debug(log_message) {"entered with params #{params}"}
+    @@logger.debug(log_message) {"entered with params #{params}"}
     response = getCurb(url: @@url + '/cloud-services', params: params)
-    GtkApi.logger.debug(log_message) {"response=#{response}"}
+    @@logger.debug(log_message) {"response=#{response}"}
     vectorize_hash response
   end
 
   def self.began_at
     log_message=LOG_MESSAGE+"##{__method__}"
-    GtkApi.logger.debug(log_message) {'entered'}
+    @@logger.debug(log_message) {'entered'}
     response = getCurb(url: @@url + '/began_at')
-    GtkApi.logger.debug(log_message) {"response=#{response}"}
+    @@logger.debug(log_message) {"response=#{response}"}
     response
   end
 end
