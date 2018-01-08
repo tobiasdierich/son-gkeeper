@@ -190,13 +190,12 @@ class GtkSrv < Sinatra::Base
     logger.debug(log_message) {"params #{params}"}
 
     begin
-      NService.new(settings.services_catalogue, logger).find_by_uuid(params['service_uuid'])
-
+      return NService.new(settings.services_catalogue, logger).find_by_uuid(params['service_uuid'])
     rescue NServiceNotFoundError
       logger.debug(log_message) { "Can't find NS with uuid = #{params['service_uuid']}. Checking for complex service."}
-    end
 
-    CoService.new(settings.complex_services_catalogue, logger).find_by_uuid(params['service_uuid'])
+      return CoService.new(settings.complex_services_catalogue, logger).find_by_uuid(params['service_uuid'])
+    end
   end
     
   class Hash
