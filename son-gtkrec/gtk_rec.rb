@@ -87,6 +87,8 @@ class GtkRec < Sinatra::Base
   if settings.repositories
     set :services_repository, Repository.new(settings.repositories+'/nsr/ns-instances', logger)
     logger.debug(MODULE) {"Services repository: #{settings.services_repository.inspect}"}
+    set :complex_services_repository, Repository.new(settings.repositories+'/cosr/cos-instances', logger)
+    logger.debug(MODULE) {"Complex Services repository: #{settings.complex_services_repository.inspect}"}
     set :functions_repository, Repository.new(settings.repositories+'/vnfr/vnf-instances', logger)
     logger.debug(MODULE) {"Functions repository: #{settings.functions_repository.inspect}"}
   else
